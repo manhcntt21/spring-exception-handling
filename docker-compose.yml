@@ -1,0 +1,24 @@
+version: "3.8"
+services:
+  mysqldb:
+    image: mysql:8.0
+    cap_add:
+      - SYS_NICE
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=myblog
+      - MYSQL_ROOT_PASSWORD=root
+# default user root
+    ports:
+      - 3308:3306
+    volumes:
+      - mysqldb:/var/lib/mysql
+      - ./mysqldb/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - exceptionpj_network
+networks:
+  exceptionpj_network:
+    name: exceptionpj_network
+volumes:
+  mysqldb:
+    driver: local
