@@ -2,6 +2,7 @@ package com.example.springexceptionhandling;
 
 import com.example.springexceptionhandling.exception.type.ResourceNotFoundException;
 import com.example.springexceptionhandling.repository.PostRepository;
+import org.modelmapper.ModelMapper;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,6 +15,10 @@ public class SpringExceptionHandlingApplication {
         SpringApplication.run(SpringExceptionHandlingApplication.class, args);
     }
 
+    @Bean
+    public ModelMapper modelMapper() {
+        return new ModelMapper();
+    }
 //    @Bean
 //    public CommandLineRunner load(PostRepository postRepository) {
 //        return args -> {

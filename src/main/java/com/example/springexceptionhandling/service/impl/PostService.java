@@ -6,6 +6,7 @@ import com.example.springexceptionhandling.entity.Post;
 import com.example.springexceptionhandling.exception.type.ResourceNotFoundException;
 import com.example.springexceptionhandling.repository.PostRepository;
 import com.example.springexceptionhandling.service.IPostService;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,22 +22,21 @@ import java.util.List;
 @Service
 public class PostService implements IPostService {
     private PostRepository postRepository;
+    private ModelMapper modelMapper;
 
-    public PostService(PostRepository postRepository) {
+    public PostService(PostRepository postRepository, ModelMapper modelMapper) {
         this.postRepository = postRepository;
+        this.modelMapper = modelMapper;
     }
 
     /**
      * //TODO nếu có ngoại lệ ở đây xử lý sao
-     * @param postDto
+     * @param postRequest
      * @return
      */
     @Override
-    public PostDto createPost(PostDto postDto) {
-        Post post = mapToEntity(postDto);
-        Post newPost = postRepository.save(post);
-        PostDto postResponse = mapToDTO(newPost);
-        return postResponse;
+    public Post createPost(Post postRequest) {
+        return postRepository.save(postRequest);
     }
 
     /**
@@ -48,7 +48,7 @@ public class PostService implements IPostService {
      * @return
      */
     @Override
-    public PostResponse getAllPosts(int pageNo, int pageSize, String sortBy, String sortDir) {
+    public PostResponse getAllPostsPaging(int pageNo, int pageSize, String sortBy, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
 
@@ -59,35 +59,45 @@ public class PostService implements IPostService {
         // TODO get data from Page
         List<Post> postList = posts.getContent();
 
-        List<PostDto> content = postList.stream().map(post -> mapToDTO(post)).toList();
+        List<PostDto> content = postList.stream().map(post -> modelMapper.map(post, PostDto.class)).toList();
         return PostResponse.builder()
                 .content(content)
                 .pageNo(posts.getNumber())
                 .pageSize(posts.getSize())
                 .totalElements(posts.getTotalElements())
                 .totalPages(posts.getTotalPages())
+                .sortBy(sortBy)
+                .sortDir(sortDir)
                 .build();
     }
 
     @Override
-    public PostDto getPostById(long id) {
-        Post post =  postRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Post", "id", id));
-        return mapToDTO(post);
+    public List<Post> getAllPosts() {
+        return postRepository.findAll();
     }
 
     @Override
-    public PostDto updatePost(PostDto postDto, long id) {
-        Post post =  postRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Post", "id", id));
-        post.setContent(postDto.getContent());
-        post.setDescription(postDto.getDescription());
-        post.setTitle(postDto.getTitle());
+    public Post getPostById(long id) {
+        return postRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Post", "id", id));
+    }
 
-        Post updatedPost = postRepository.save(post);
-        return mapToDTO(updatedPost);
+    @Override
+    public Post updatePost(Post postRequest, long id) {
+        Post post =  postRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Post", "id", id));
+        post.setContent(postRequest.getContent());
+        post.setDescription(postRequest.getDescription());
+        post.setTitle(postRequest.getTitle());
+        return postRepository.save(post);
     }
 
     @Override
     public void deletePostById(long id) {
+        Post post = postRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Post", "id", id));
+        postRepository.delete(post);
+    }
+
+    @Override
+    public void deletePost(long id) {
         Post post = postRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Post", "id", id));
         postRepository.delete(post);
     }
